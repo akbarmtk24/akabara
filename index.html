@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Your Birthday I Write This Letter</title>
+    <style>
+        :root {
+            --primary: #ff7675;
+            --background: #ffeaa7;
+            --card: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: #2d3436;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-index: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+        h1 { color: var(--primary); text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, textarea {
+            width: 100%; padding: 10px; border: 1px solid #dfe6e9;
+            border-radius: 8px; box-sizing: border-box; font-size: 16px;
+        }
+        button {
+            width: 100%; padding: 12px; background: var(--primary);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; cursor: pointer; font-weight: bold;
+        }
+        button:hover { opacity: 0.9; }
+        .hidden { display: none; }
+        
+        /* Tampilan Surat */
+        .letter-box { text-align: center; }
+        .letter-content { text-align: left; line-height: 1.6; white-space: pre-wrap; margin: 20px 0; }
+        .media-container img, .media-container video {
+            width: 100%; max-height: 350px; object-fit: cover;
+            border-radius: 8px; margin-top: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .generated-url {
+            background: #e1f5fe; padding: 15px; border-radius: 8px;
+            word-break: break-all; margin-top: 15px; border: 1px dashed #0288d1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="generator-section">
+        <h1>🎁 Buat Surat Ulang Tahun</h1>
+        <div class="form-group">
+            <label>Nama Penerima:</label>
+            <input type="text" id="toInput" placeholder="Contoh: Budi">
+        </div>
+        <div class="form-group">
+            <label>Nama Pengirim:</label>
+            <input type="text" id="fromInput" placeholder="Contoh: Ani">
+        </div>
+        <div class="form-group">
+            <label>Isi Surat:</label>
+            <textarea id="messageInput" rows="6" placeholder="Tulis ucapan dan harapanmu di sini..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Link Foto (URL):</label>
+            <input type="url" id="photoInput" placeholder="Masukkan URL foto (Imgur/Pinterest/dll)">
+        </div>
+        <div class="form-group">
+            <label>Link Video (URL MP4 / YouTube):</label>
+            <input type="url" id="videoInput" placeholder="Masukkan URL video langsung atau link YouTube">
+        </div>
+        <button onclick="generateLetterLink()">Dapatkan Link Surat ✨</button>
+        
+        <div id="resultUrlContainer" class="hidden">
+            <p><strong>Salin link di bawah ini dan kirim ke dia:</strong></p>
+            <div class="generated-url" id="outputUrl"></div>
+        </div>
+    </div>
+
+    <div id="letter-section" class="hidden class="letter-box"">
+        <h1 id="letterTitle">For You ✨</h1>
+        <p><strong>Dear, <span id="viewTo"></span></strong> 📋</p>
+        <div class="letter-content" id="viewMessage"></div>
+        
+        <div class="media-container" id="mediaContainer">
+            </div>
+        
+        <p style="text-align: right; margin-top: 30px;"><strong>With love, <span id="viewFrom"></span> ❤️</strong></p>
+    </div>
+</div>
+
+<script>
+    // Fungsi untuk membaca parameter dari URL
+    function getQueryParams() {
+        const params = {};
+        const search = window.location.search.substring(1);
+        if (!search) return null;
+        const pairs = search.split("&");
+        for (const pair of pairs) {
+            const [key, value] = pair.split("=");
+            params[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, " "));
+        }
+        return params;
+    }
+
+    // Fungsi untuk mengubah link YouTube biasa menjadi format Embed agar bisa diputar
+    function formatYouTubeEmbed(url) {
+        if (url.includes('youtube.com/watch')) {
+            const videoId = url.split('v=')[1]?.split('&')[0];
+            return `https://www.youtube.com/embed/${videoId}`;
+        } else if (url.includes('youtu.be/')) {
+            const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+        return url;
+    }
+
+    // Cek saat halaman dimuat, apakah ini mode "Melihat Surat" atau "Membuat Surat"
+    const data = getQueryParams();
+    if (data && (data.to || data.message)) {
+        // Sembunyikan form, tampilkan surat
+        document.getElementById('generator-section').classList.add('hidden');
+        document.getElementById('letter-section').classList.remove('hidden');
+        
+        // Isi data surat
+        document.getElementById('viewTo').innerText = data.to || 'Sahabatku';
+        document.getElementById('viewFrom').innerText = data.from || 'Seseorang';
+        document.getElementById('viewMessage').innerText = data.msg || '';
+        
+        const mediaContainer = document.getElementById('mediaContainer');
+        
+        // Tampilkan Foto jika ada
+        if (data.img) {
+            const imgTag = document.createElement('img');
+            imgTag.src = data.img;
+            mediaContainer.appendChild(imgTag);
+        }
+        
+        // Tampilkan Video jika ada
+        if (data.vid) {
+            if (data.vid.includes('youtube.com') || data.vid.includes('youtu.be')) {
+                const embedUrl = formatYouTubeEmbed(data.vid);
+                mediaContainer.innerHTML += `<iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen style="border-radius:8px; margin-top:15px;"></iframe>`;
+            } else {
+                const videoTag = document.createElement('video');
+                videoTag.src = data.vid;
+                videoTag.controls = true;
+                mediaContainer.appendChild(videoTag);
+            }
+        }
+    }
+
+    // Fungsi untuk membuat Link Kustom
+    function generateLetterLink() {
+        const to = document.getElementById('toInput').value;
+        const from = document.getElementById('fromInput').value;
+        const msg = document.getElementById('messageInput').value;
+        const img = document.getElementById('photoInput').value;
+        const vid = document.getElementById('videoInput').value;
+        
+        if(!to || !msg) {
+            alert("Nama penerima dan Isi surat wajib diisi ya!");
+            return;
+        }
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const queryParams = `?to=${encodeURIComponent(to)}&from=${encodeURIComponent(from)}&msg=${encodeURIComponent(msg)}&img=${encodeURIComponent(img)}&vid=${encodeURIComponent(vid)}`;
+        
+        const fullUrl = baseUrl + queryParams;
+        
+        document.getElementById('outputUrl').innerText = fullUrl;
+        document.getElementById('resultUrlContainer').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
